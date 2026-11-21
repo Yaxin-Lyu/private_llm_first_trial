@@ -1,0 +1,28 @@
+{
+  "format": "lyx-toolbox",
+  "version": 1,
+  "todos": [
+    {
+      "id": "76b60886-c3ca-4a58-9a8e-414d7be24bc9",
+      "text": "准备下周的资料",
+      "due": "",
+      "done": false,
+      "created": "2026-11-21T13:15:39.903Z"
+    },
+    {
+      "id": "from-browser",
+      "text": "浏览器导入的待办",
+      "due": "",
+      "done": false,
+      "created": "2026-11-21T13:15:39.910Z"
+    }
+  ],
+  "plans": {
+    "2026-11-21": [
+      {
+        "text": "完成今天的阅读",
+        "done": true
+      }
+    ]
+  }
+}

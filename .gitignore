@@ -1,0 +1,33 @@
+
+# API secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Electron
+dist/
+out/
+release/
+
+# Dependencies
+node_modules/
+
+# Local data
+userData/
+*.sqlite
+*.sqlite3
+*.db
+
+# Generated files
+docs/.build/
+.DS_Store
+*.log
+dist/
+node_modules/
+.env
+.env.*
+!.env.example
+docs/.build/
+.DS_Store

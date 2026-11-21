@@ -1,0 +1,54 @@
+const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+const {createLibrary,extractDocument}=require('../lib/library.cjs');
+const {createPromptStore,PRESETS}=require('../lib/prompts.cjs');
+const {createFixtures,makePDF}=require('./library-fixtures.cjs');
+async function main() {
+  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'lyx-library-check-'));
+  try {
+    const source=await createFixtures(path.join(tmp,'source')),store=createLibrary(path.join(tmp,'library'));
+    await fs.symlink(path.join(source,'会议计划.txt'),path.join(source,'链接.txt'));
+    const progress=[],report=await store.importPaths([source],value=>progress.push(value));
+    assert.equal(report.added,4,JSON.stringify(report));
+    assert.equal(report.skipped,3,JSON.stringify(report));
+    assert.ok(progress.some(x=>x.stage==='extract'));
+    const docs=await store.list();assert.equal(docs.length,4);
+    const pdf=docs.find(x=>x.extension==='.pdf'),word=docs.find(x=>x.extension==='.docx'),txt=docs.find(x=>x.extension==='.txt');
+    assert.equal(pdf.pages,2);assert.match((await store.preview(word.id)).text,/December 10/);
+    const matched=await store.retrieve([pdf.id],'Where and when is the workshop?');
+    assert.equal(matched.sources[0].page,2);assert.match(matched.sources[0].text,/Cedar/);
+    assert.match((await store.retrieve([txt.id],'苍梧会议室')).sources[0].text,/下午三点/);
+    assert.equal((await store.retrieve([txt.id],'xylophoneZeta987')).sources.length,0);
+    assert.equal((await store.retrieve([pdf.id],'请总结资料')).mode,'overview');
+    assert.equal((await store.importPaths([source])).duplicates,4);
+    assert.equal((await createLibrary(path.join(tmp,'library')).list()).length,4);
+    await assert.rejects(store.get('../../outside'),/编号无效/);
+    await assert.rejects(store.retrieve(Array(501).fill(txt.id),'query'),/500/);
+    assert.equal(docs.every(d=>d.locations[0].rootId.startsWith('folder:')),true);
+    const other=path.join(tmp,'another-folder');await fs.mkdir(other);
+    await fs.copyFile(path.join(source,'会议计划.txt'),path.join(other,'copy.txt'));
+    assert.equal((await store.importPaths([other])).duplicates,1);
+    const shared=(await store.list()).find(d=>d.id===txt.id);
+    assert.equal(shared.locations.length,2);assert.ok(shared.locations.some(x=>x.relativePath==='another-folder/copy.txt'));
+    const largeSource=path.join(tmp,'large');await fs.mkdir(largeSource);
+    for(let i=0;i<24;i++)await fs.writeFile(path.join(largeSource,i+'.txt'),'资料 '+i+(i===23?' 钛合金预算五百万元':' 普通日常记录'));
+    const large=createLibrary(path.join(tmp,'large-library'),{extract:async bytes=>({pages:[{page:null,text:bytes.toString()}],characters:bytes.length,warnings:[]})});
+    assert.equal((await large.importPaths([largeSource])).added,24);
+    const largeResult=await large.retrieve((await large.list()).map(d=>d.id),'钛合金预算');
+    assert.match(largeResult.sources[0].text,/五百万元/);assert.ok(largeResult.sources.length<=8);
+    await assert.rejects(extractDocument(makePDF(['']),'.pdf'),/没有可提取/);
+    await assert.rejects(extractDocument(Buffer.from('bad pdf'),'.pdf'),/PDF/i);
+    await assert.rejects(extractDocument(Buffer.from('x'.repeat(250001)),'.txt'),/25 万/);
+    const stop=new AbortController();stop.abort();
+    assert.equal((await store.importPaths([source],()=>{},stop.signal)).cancelled,true);
+    const settings=createPromptStore(path.join(tmp,'settings.json'));
+    assert.equal((await settings.get()).instructions,PRESETS.general.text);
+    await settings.save('用中文回答，先给结论，不编造出处。');
+    assert.match((await createPromptStore(path.join(tmp,'settings.json')).get()).instructions,/先给结论/);
+    await settings.save('');assert.equal((await settings.get()).instructions,'');
+    await assert.rejects(settings.save('x'.repeat(8001)),/8,000/);
+    await store.remove(txt.id);assert.equal((await store.list()).length,3);
+    assert.ok((await fs.stat(path.join(source,'会议计划.txt'))).isFile());
+    console.log('PASS library: real PDF/DOCX/TXT/MD extraction, nested folder import, hidden/symlink/unsupported skips, duplicates, persistence, scoped Chinese/English retrieval, citations, empty/invalid/oversized files, cancel, removal preserving original, prompt settings');
+  } finally {await fs.rm(tmp,{recursive:true,force:true});}
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

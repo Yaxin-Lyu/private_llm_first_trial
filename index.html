@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'self'; form-action 'none'; object-src 'none'; base-uri 'none'" />
+  <meta name="theme-color" content="#f7f7f5" />
+  <link rel="icon" type="image/png" href="assets/kitty-app.png" />
+  <title>lyx</title>
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><img class="brand-logo" src="assets/kitty-app.png" alt=""/><span>lyx</span><button class="icon-button rail-toggle" aria-label="收起侧栏">‹</button></div>
+      <button class="new-chat" id="new-chat"><span class="plus">＋</span> 新建对话 <kbd>⌘ K</kbd></button>
+      <div class="nav-label">工作区</div>
+      <button class="nav-item active" id="chat-button"><span>◌</span> 聊天</button>
+      <button class="nav-item" id="toolbox-button"><span>▦</span> 工具箱</button>
+      <button class="nav-item" id="library-button"><span>▧</span> 资料库</button>
+      <div class="history-head"><span>最近对话</span><button class="icon-button" aria-label="搜索">⌕</button></div>
+      <div class="history-list" id="history-list"></div>
+      <div class="sidebar-spacer"></div>
+      <button class="profile" id="settings-button"><div class="avatar">Y</div><div class="profile-copy"><strong>本地工作区</strong><span>仅此设备</span></div><span class="dots">···</span></button>
+    </aside>
+
+    <main class="main-panel" id="chat-panel">
+      <header class="topbar"><div class="model-picker"><span class="model-dot"></span><span>OpenAI</span><span class="muted" id="connection-mode">· 演示模式</span><span class="chevron">⌄</span></div><div class="top-actions"><button class="top-link" id="share-button" title="导出完整对话为 PDF">↗ <span>分享 PDF</span></button><button class="icon-button" id="chat-more" aria-label="更多" aria-haspopup="menu" aria-expanded="false">···</button></div></header>
+      <section class="conversation" id="conversation">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon"><img src="assets/kitty-app.png" alt="小猫图标"/></div>
+          <p class="eyebrow">你的私人 AI 工作台</p>
+          <h1>今天想一起<br/><em>做点什么？</em></h1>
+          <p class="welcome-sub">一个安静、专注的对话空间。连接 API 后，就能开始使用你的模型。</p>
+          <div class="suggestions">
+            <button class="suggestion" data-prompt="帮我规划一个高效的工作日"><span class="suggestion-icon peach">↗</span><span><b>规划我的一天</b><small>整理任务，找到清晰节奏</small></span></button>
+            <button class="suggestion" data-prompt="给我一些学习新知识的方法"><span class="suggestion-icon lilac">⌘</span><span><b>探索一个新想法</b><small>从好奇开始，一起深入</small></span></button>
+            <button class="suggestion" data-prompt="帮我写一封简洁友好的邮件"><span class="suggestion-icon mint">✎</span><span><b>写点什么</b><small>让表达更自然、更准确</small></span></button>
+            <button class="suggestion" data-prompt="把一个复杂的问题拆解成简单步骤"><span class="suggestion-icon blue">◫</span><span><b>拆解一个难题</b><small>一步一步找到解法</small></span></button>
+          </div>
+        </div>
+        <div class="messages" id="messages" aria-live="polite"></div>
+      </section>
+      <footer class="composer-wrap">
+        <div id="library-context" class="library-context" hidden><span id="library-context-label"></span><button type="button" id="library-context-manage">管理</button><button type="button" id="library-context-clear">取消选择</button></div>
+        <form class="composer" id="composer">
+          <div id="draft-attachments" class="attachment-list" hidden></div>
+          <input type="file" id="attachment-input" accept=".png,.jpg,.jpeg,.webp,.pdf" multiple hidden />
+          <textarea id="message-input" rows="1" placeholder="给 lyx 发消息…" aria-label="消息内容"></textarea>
+          <div class="composer-tools"><div class="tool-left"><button type="button" class="tool-button" id="attach-button" title="添加图片或 PDF" aria-label="添加图片或 PDF">＋</button><span class="tool-divider"></span><button type="button" class="mode-button" id="mode-button">◌ <span>标准模式</span>⌄</button></div><div class="tool-right"><span class="enter-hint">↵ 发送</span><button class="send-button" id="send-button" type="submit" aria-label="发送">↑</button></div></div>
+        <p class="attachment-hint" id="attachment-hint" hidden>发送后，附件会上传至 OpenAI。每次最多 4 个，每个不超过 10 MB。</p>
+        </form>
+        <p class="disclaimer">演示模式下的回复由本地生成。连接 API 后即可使用模型服务。</p>
+      </footer>
+    </main>
+    <section id="toolbox-panel" class="toolbox-panel" hidden aria-label="工具箱">
+      <iframe id="toolbox-frame" title="我的工具箱" sandbox="allow-scripts allow-same-origin allow-downloads"></iframe>
+    </section>
+
+    <section id="library-panel" class="library-panel" hidden aria-label="资料库">
+      <header class="library-header"><div><p class="eyebrow">你的长期参考资料</p><h1>资料库</h1><p>导入文件或文件夹，选好资料，再带着问题来聊天。</p></div><div class="library-import-actions"><button id="library-import-files" class="library-secondary">＋ 导入文件</button><button id="library-import-folder" class="library-primary">▱ 导入文件夹</button></div></header>
+      <div class="library-info">支持 PDF、DOCX、TXT、Markdown、CSV、JSON。导入时只存本机；提问时将相关文字片段发送给 OpenAI。扫描件请先做文字识别。</div>
+      <div class="library-progress" id="library-progress" hidden><span id="library-progress-text"></span><button id="library-import-stop" class="library-secondary">停止导入</button></div>
+      <details class="library-report" id="library-report" hidden><summary id="library-report-summary"></summary><ul id="library-report-issues"></ul></details>
+      <div class="library-toolbar"><input id="library-search" type="search" placeholder="搜索文件名或文件夹…" aria-label="搜索资料"/><span id="library-count">正在读取…</span><button class="library-text-button" id="library-select-visible">选择当前列表</button><button class="library-text-button" id="library-unselect-all">取消选择</button></div>
+      <div id="library-files" class="library-files"></div>
+      <div id="library-empty" class="library-empty"><div>▧</div><h2>把你的资料放进来</h2><p>可以一次选择多个文件，也可以选择整个文件夹。<br/>导入后会保留副本，原文件不受影响。</p></div>
+      <p id="library-status" class="library-status" role="status"></p>
+      <footer class="library-footer"><div><b id="library-selected-count">已选 0 份</b><p>可勾选整个文件夹；在所选资料中查找相关片段，再交给模型回答。</p></div><button id="library-use" class="library-primary" disabled>用所选资料提问 →</button></footer>
+    </section>
+
+    <aside class="right-rail"><button class="rail-action selected" title="新对话">✳</button><button class="rail-action" title="搜索">⌕</button><div class="rail-spacer"></div><button class="rail-action" title="帮助">?</button></aside>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div id="chat-menu" class="chat-menu" role="menu" aria-label="对话操作" hidden><strong id="chat-menu-title"></strong><button id="chat-rename" role="menuitem">✎　重命名对话</button><button id="chat-export" role="menuitem">↗　导出 PDF</button><button id="chat-delete" class="danger" role="menuitem">×　删除对话</button><p id="chat-menu-note"></p></div>
+  <dialog id="chat-edit-dialog" aria-labelledby="chat-edit-title"><form id="chat-edit-form"><h2 id="chat-edit-title"></h2><p id="chat-edit-copy"></p><label id="chat-name-label">对话名称<input id="chat-name" maxlength="80" autocomplete="off"/></label><div class="chat-edit-actions"><button type="button" id="chat-edit-cancel" class="library-secondary">取消</button><button type="submit" id="chat-edit-confirm" class="library-primary">保存名称</button></div></form></dialog>
+  <dialog id="settings-dialog">
+    <div class="dialog-head"><div><span class="eyebrow">设置</span><h2>你的工作区</h2></div><button class="icon-button close-dialog" aria-label="关闭">×</button></div>
+    <div class="settings-card"><div class="settings-icon">⌘</div><div><b>OpenAI API</b><p id="api-status-copy">API Key 将使用 macOS 安全存储保存在本机。</p></div><span class="status-pill" id="api-status-pill">待配置</span></div>
+    <label class="api-label" for="api-key-input">API Key</label>
+    <div class="api-key-row"><input id="api-key-input" type="password" autocomplete="off" placeholder="粘贴新创建的 API Key"/><button id="save-api-key">保存</button></div>
+    <label class="api-label" for="model-select">模型</label>
+    <select id="model-select" class="model-select"><option value="gpt-5-mini">gpt-5-mini（默认）</option><option value="gpt-5.1">gpt-5.1</option><option value="gpt-5">gpt-5</option></select>
+
+    <section class="prompt-settings">
+      <div class="prompt-heading"><b>自定义提示词</b><span id="prompt-count">0 / 8,000</span></div>
+      <p>规定聊天助手的回答风格和要求；翻译功能使用自己的规则。</p>
+      <label class="api-label" for="prompt-preset">从一个示例开始</label>
+      <select id="prompt-preset" class="model-select"><option value="">选择示例，不会自动保存</option></select>
+      <textarea id="prompt-input" rows="6" maxlength="8000" aria-label="自定义提示词" placeholder="例如：用中文回答，先给结论，再用一个例子解释；不确定时明确说明。"></textarea>
+      <div class="prompt-actions"><button id="prompt-reset" class="library-secondary" type="button">恢复默认内容</button><button id="prompt-save" class="library-primary" type="button">保存提示词</button></div>
+      <p id="prompt-status" role="status">保存后从下一条聊天消息起生效，留空保存可关闭个性化要求。</p>
+    </section>
+
+    <div class="setting-row"><div><b>聊天记录</b><p>聊天和附件保存在这台 Mac；清除时一起删除</p></div><span class="toggle on"></span></div>
+    <div class="setting-row"><div><b>界面语言</b><p>简体中文</p></div><span class="setting-value">中文　⌄</span></div>
+    <button class="clear-button" id="clear-history">清除聊天记录与附件</button>
+  </dialog>
+  <dialog id="image-dialog"><div class="image-dialog-head"><span id="image-title"></span><button type="button" class="icon-button" id="close-image" aria-label="关闭图片">×</button></div><img id="full-image" alt="" /></dialog>
+  <dialog id="library-preview-dialog" class="library-preview-dialog"><div class="dialog-head"><div><span class="eyebrow">提取文字预览</span><h2 id="library-preview-title"></h2></div><button class="icon-button" id="library-preview-close" aria-label="关闭预览">×</button></div><p id="library-preview-note"></p><pre id="library-preview-text"></pre></dialog>
+  <dialog id="source-dialog" class="library-preview-dialog"><div class="dialog-head"><h2 id="source-title"></h2><button class="icon-button" id="source-close" aria-label="关闭引用">×</button></div><pre id="source-text"></pre></dialog>
+  <script src="src/workspace.js"></script>
+  <script src="src/app.js"></script>
+  <script src="src/prompt-settings.js"></script>
+  <script src="src/library.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "name": "lyx",
+  "version": "0.1.5",
+  "private": true,
+  "description": "A private desktop chat shell for an OpenAI API connection",
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "electron .",
+    "build": "electron-builder --mac dmg zip --arm64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.lyx.chat",
+    "productName": "lyx",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/kitty.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "index.html",
+      "src/**/*",
+      "lib/**/*",
+      "toolbox/**/*",
+      "assets/kitty-app.png"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist/0.1.5"
+    }
+  },
+  "dependencies": {
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "4.10.38"
+  }
+}
